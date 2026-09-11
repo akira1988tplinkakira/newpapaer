@@ -129,7 +129,7 @@ rss:
       name: "Hacker News"
       url: "https://hnrss.org/frontpage"
 
-     - id: "yahoo-finance"
+    - id: "yahoo-finance"
       name: "雅虎财经"
       url: "https://finance.yahoo.com/news/rssindex"
 
