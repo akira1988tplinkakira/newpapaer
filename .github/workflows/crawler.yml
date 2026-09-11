@@ -46,11 +46,16 @@ concurrency:
 permissions:
   contents: read
   actions: write
+  pages: write
+  id-token: write
 
 jobs:
   crawl:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout repository
@@ -92,7 +97,6 @@ jobs:
               echo "✅ Trial: ${DAYS_LEFT} days left. Run 'Check In' before expiry to renew."
             fi
           fi
-
 
       # --------------------------------------------------------------------------------
       # 🚦 TRAFFIC CONTROL / 流量控制
@@ -168,6 +172,39 @@ jobs:
           S3_REGION: ${{ secrets.S3_REGION }}
           GITHUB_ACTIONS: true
         run: uv run python -m trendradar
+
+      - name: Upload reports artifact
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trendradar-reports-${{ github.run_number }}
+          path: |
+            index.html
+            output/
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Prepare GitHub Pages
+        if: success()
+        run: |
+          rm -rf gh_pages
+          mkdir -p gh_pages
+          cp index.html gh_pages/index.html
+
+      - name: Setup Pages
+        if: success()
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        if: success()
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: gh_pages
+
+      - name: Deploy to GitHub Pages
+        if: success()
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       # --------------------------------------------------------------------------------
       # ☁️ CLOUDFLARE PAGES DEPLOY / 部署到 Cloudflare Pages（可选）
